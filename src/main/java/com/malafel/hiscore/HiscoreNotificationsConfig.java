@@ -125,7 +125,7 @@ public interface HiscoreNotificationsConfig extends Config
 	@ConfigItem(
 			keyName = "trackedPlayers",
 			name = "Players",
-			description = "Comma-separated list of player names to track. Only the first 10 names are used.",
+			description = "Comma-separated list of player names to track. Only the first 10 names are used. Please only track people who know and welcome the friendly competition.",
 			section = SECTION_TRACKED_PLAYERS,
 			position = 2
 	)
