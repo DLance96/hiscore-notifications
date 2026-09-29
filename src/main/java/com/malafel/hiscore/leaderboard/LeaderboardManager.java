@@ -139,6 +139,51 @@ public class LeaderboardManager {
     }
 
     /**
+     * Whether the local player's own hiscore data has been fetched and active processing has begun.
+     */
+    public boolean hasPlayerHiscore() {
+        return state == LeaderboardManagerState.ACTIVE && playerHiscore != null;
+    }
+
+    /**
+     * The local player's name, as used for their own hiscore lookup. Null until `hasPlayerHiscore()` is true.
+     */
+    public String getPlayerName() {
+        return playerHiscore == null ? null : playerHiscore.getPlayer();
+    }
+
+    /**
+     * Whether rank notifications can occur for a skill: the local player is ranked in it, and meets
+     * `MIN_REQUIRED_LEVEL_FOR_TRACKING`.
+     */
+    public boolean isSkillEligibleForNotifications(Skill skill) {
+        if (!hasPlayerHiscore()) {
+            return false;
+        }
+        try {
+            var skillResult = playerHiscore.getSkill(HiscoreSkill.valueOf(skill.name()));
+            return skillResult != null && skillResult.getRank() > 0 && skillResult.getLevel() >= MIN_REQUIRED_LEVEL_FOR_TRACKING;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Whether rank notifications can occur for a boss: the local player is ranked at it.
+     */
+    public boolean isBossEligibleForNotifications(BossInfo boss) {
+        if (!hasPlayerHiscore() || !boss.isValid()) {
+            return false;
+        }
+        try {
+            var bossResult = playerHiscore.getSkill(HiscoreSkill.valueOf(boss.hiscoreSkillName));
+            return bossResult != null && bossResult.getRank() > 0;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
      * Set LeaderboardManager to the state it should be in on initialization.
      */
     public void reset() {

@@ -36,6 +36,7 @@ import java.util.Map;
 public class HiscoreNotificationsPlugin extends Plugin
 {
 	private static final String CHAT_COMMANDS_PLUGIN_NAME = ChatCommandsPlugin.class.getSimpleName().toLowerCase();
+	private static final String CONFIG_GROUP = "hiscorenotifications";
 
 	@Inject
 	private Client client;
@@ -56,6 +57,9 @@ public class HiscoreNotificationsPlugin extends Plugin
 
 	@Inject
 	private LeaderboardManager leaderboardManager;
+
+	@Inject
+	private TrackedPlayerManager trackedPlayerManager;
 
 	@Inject
     RateLimitedHttpClientInterface clientInterface;
@@ -87,7 +91,7 @@ public class HiscoreNotificationsPlugin extends Plugin
 		previousChosenLeaderboard = config.chosenLeaderboard();
 		notifications.startUp();
 		previousXpMap.clear();
-		leaderboardManager.reset();
+		resetManagers();
 	}
 
 	@Override
@@ -95,7 +99,13 @@ public class HiscoreNotificationsPlugin extends Plugin
 	{
 		previousXpMap.clear();
 		notifications.shutDown();
+		resetManagers();
+	}
+
+	private void resetManagers()
+	{
 		leaderboardManager.reset();
+		trackedPlayerManager.reset();
 	}
 
 	@Subscribe
@@ -110,7 +120,7 @@ public class HiscoreNotificationsPlugin extends Plugin
 			case LOGIN_SCREEN_AUTHENTICATOR:
 			case CONNECTION_LOST:
 				previousXpMap.clear();
-				leaderboardManager.reset();
+				resetManagers();
 				break;
 		}
 
@@ -121,6 +131,7 @@ public class HiscoreNotificationsPlugin extends Plugin
 		bossInfoRegistry.process(event);
 		clientInterface.process(event);
 		leaderboardManager.process(event);
+		trackedPlayerManager.process(event);
 	}
 
 	private boolean isChatCommandsDisabled() {
@@ -141,8 +152,13 @@ public class HiscoreNotificationsPlugin extends Plugin
 		}
 
 		if (previousChosenLeaderboard != config.chosenLeaderboard()) {
-			leaderboardManager.reset();
+			resetManagers();
 			previousChosenLeaderboard = config.chosenLeaderboard();
+		}
+
+		if (event.getGroup().equals(CONFIG_GROUP) &&
+			(event.getKey().equals("trackedPlayersEnabled") || event.getKey().equals("trackedPlayers"))) {
+			trackedPlayerManager.reset();
 		}
 
 		if (lastTensInterval != config.tensInterval() ||
@@ -155,7 +171,7 @@ public class HiscoreNotificationsPlugin extends Plugin
 			lastThousandsInterval = config.thousandsInterval();
 			lastTenThousandsInterval = config.tenThousandsInterval();
 			lastHundredThousandsInterval = config.hundredThousandsInterval();
-			leaderboardManager.reset();
+			resetManagers();
 		}
 	}
 
@@ -194,6 +210,14 @@ public class HiscoreNotificationsPlugin extends Plugin
 				notifySkillLeaderboard(skill, entry);
 			}
 		}
+
+		if (shouldNotifyForSkill(skill) && leaderboardManager.isSkillEligibleForNotifications(skill))
+		{
+			for (SkillLeaderboardEntry entry: trackedPlayerManager.getPassedSkillEntries(skill, previousXp, currentXp)) {
+				log.debug("Passed tracked player {} in {}", entry.name, skill.getName());
+				notifySkillLeaderboard(skill, entry);
+			}
+		}
 	}
 
 	private void onKcChanged(String boss, int kc) {
@@ -223,6 +247,14 @@ public class HiscoreNotificationsPlugin extends Plugin
 			log.debug("Milestone leaderboard boss KC rank to notify for {}", bossInfo.chatCommandsLongName);
 
 			for (BossLeaderboardEntry entry: milestoneLeaderboardEntries) {
+				notifyBossLeaderboard(bossInfo, entry);
+			}
+		}
+
+		if (shouldNotifyForBoss(bossInfo) && leaderboardManager.isBossEligibleForNotifications(bossInfo))
+		{
+			for (BossLeaderboardEntry entry: trackedPlayerManager.getPassedBossEntries(bossInfo, kc-1, kc)) {
+				log.debug("Passed tracked player {} at {}", entry.name, bossInfo.chatCommandsLongName);
 				notifyBossLeaderboard(bossInfo, entry);
 			}
 		}

@@ -104,6 +104,37 @@ public interface HiscoreNotificationsConfig extends Config
 	}
 
 	@ConfigSection(
+			name = "Tracked Players",
+			description = "Notifications for surpassing specific players",
+			position = 250
+	)
+	String SECTION_TRACKED_PLAYERS = "trackedPlayers";
+
+	@ConfigItem(
+			keyName = "trackedPlayersEnabled",
+			name = "Enable Tracked Players",
+			description = "Notify when you surpass any of the tracked players in a skill or boss. Uses the Skill and Boss notification settings.",
+			section = SECTION_TRACKED_PLAYERS,
+			position = 1
+	)
+	default boolean trackedPlayersEnabled()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+			keyName = "trackedPlayers",
+			name = "Players",
+			description = "Comma-separated list of player names to track. Only the first 10 names are used.",
+			section = SECTION_TRACKED_PLAYERS,
+			position = 2
+	)
+	default String trackedPlayers()
+	{
+		return "";
+	}
+
+	@ConfigSection(
 			name = "Bosses",
 			description = "Settings for what skills we want to display notifications on",
 			position = 300
@@ -474,7 +505,7 @@ public interface HiscoreNotificationsConfig extends Config
 	)
 	default String notificationLeaderboardRankText()
 	{
-		return "You are now rank $rank in $skill!";
+		return "Achieved rank $rank in $skill, surpassing $name!";
 	}
 
 	@ConfigSection(
@@ -503,6 +534,6 @@ public interface HiscoreNotificationsConfig extends Config
 	)
 	default String notificationBossLeaderboardRankText()
 	{
-		return "You are now rank $rank at $boss!";
+		return "Achieved rank $rank at $boss with $kc KC, surpassing $name!";
 	}
 }
